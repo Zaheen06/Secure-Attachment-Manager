@@ -161,12 +161,19 @@ export async function registerRoutes(
       return res.status(403).json({ message: "Not your session" });
     }
 
+    // Check if current QR is still valid to avoid rapid regeneration
+    if (session.currentQrCode && session.currentQrExpiresAt && new Date() < new Date(session.currentQrExpiresAt)) {
+        // Only regenerate if it's about to expire (e.g., within 5 seconds) or if forced
+        const timeToExpiry = (new Date(session.currentQrExpiresAt).getTime() - Date.now()) / 1000;
+        if (timeToExpiry > 5) {
+            return res.json({ token: session.currentQrCode, expiresAt: session.currentQrExpiresAt.toISOString() });
+        }
+    }
+
     // Generate QR Token
     const nonce = randomUUID();
     const expiresAt = new Date(Date.now() + QR_TTL_SECONDS * 1000);
     
-    // Hash/Sign the token to prevent tampering (simple version: just store nonce)
-    // In production, we might sign this with JWT_SECRET too, but storing in DB is safer for replay prevention
     const qrToken = jwt.sign({ sessionId, nonce }, JWT_SECRET, { expiresIn: QR_TTL_SECONDS });
 
     await storage.updateSessionQr(sessionId, qrToken, expiresAt);

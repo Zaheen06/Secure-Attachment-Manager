@@ -13,26 +13,34 @@ export default function SessionDetails() {
   const { id } = useParams();
   const sessionId = parseInt(id || "0");
   const { data: session, isLoading: sessionLoading } = useSession(sessionId);
-  const { data: qrData, isLoading: qrLoading } = useSessionQr(sessionId);
+  const { data: qrData, isLoading: qrLoading, refetch: refetchQr } = useSessionQr(sessionId);
   const { data: attendanceList, isLoading: attendanceLoading } = useSessionAttendance(sessionId);
   const { user } = useAuth();
 
   const [timeLeft, setTimeLeft] = useState(30);
 
-  // Timer for QR refresh visual
+  // Timer for QR refresh logic
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
-        if (prev <= 1) return 30; // Reset on cycle
+        if (prev <= 1) {
+            refetchQr();
+            return 30;
+        }
         return prev - 1;
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [qrData]);
+  }, [refetchQr]);
 
-  // Reset timer when new QR comes in
+  // Sync timeLeft with actual expiry if available
   useEffect(() => {
-    setTimeLeft(30);
+    if (qrData?.expiresAt) {
+      const expiry = new Date(qrData.expiresAt).getTime();
+      const now = Date.now();
+      const diff = Math.max(0, Math.floor((expiry - now) / 1000));
+      setTimeLeft(diff);
+    }
   }, [qrData]);
 
   if (sessionLoading) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin w-10 h-10 text-primary" /></div>;
