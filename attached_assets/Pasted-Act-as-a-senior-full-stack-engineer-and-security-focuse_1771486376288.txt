@@ -1,0 +1,178 @@
+Act as a senior full-stack engineer and security-focused backend developer.
+Build a complete, production-ready QR-based campus attendance system.
+This is NOT a theoretical explanation task.
+Generate real, working code step-by-step.
+The system must be scalable, secure, and deployment-ready.
+🎯 PRODUCT OBJECTIVE
+Create a secure attendance system where:
+• Teacher starts an attendance session
+• System generates dynamic QR code (rotates every 30 seconds)
+• Student scans QR using camera
+• Attendance is marked ONLY if:
+Student is physically inside campus (GPS validation)
+Student request comes from campus WiFi (server-side IP validation)
+QR token is valid and not expired
+QR token has not been reused (prevent replay attack)
+Student device matches registered device (device binding)
+Student is authenticated with valid JWT
+All failed attempts must be logged.
+System should handle 1000+ scans within 1–2 minutes.
+🏗 REQUIRED TECH STACK
+🔹 Frontend
+React (Vite)
+TailwindCSS
+Axios
+html5-qrcode (QR scanner)
+React Router
+Context API (Auth state management)
+FingerprintJS (device fingerprinting)
+🔹 Backend
+Node.js (v18+)
+Express
+MongoDB (Mongoose)
+JWT (Access + Refresh Tokens)
+Redis (QR session storage + TTL)
+Helmet (security headers)
+express-rate-limit
+CORS
+dotenv
+bcrypt (password hashing)
+UUID (QR nonce generation)
+🔹 Dev & Deployment Tools
+MongoDB Atlas
+Redis (local or Upstash/Render Redis)
+Postman
+Nodemon
+Render / Railway / AWS-ready structure
+Git
+🔐 SECURITY REQUIREMENTS (MUST IMPLEMENT)
+JWT authentication middleware
+Role-based access control (student, teacher, admin)
+Redis TTL for QR expiry (30 seconds)
+QR token signed with server secret
+Prevent replay attacks (mark token as used in Redis)
+Device fingerprint binding (one device per student)
+Campus public IP validation middleware
+GPS validation using Haversine formula
+Rate limiting on attendance endpoint
+Input validation using express-validator or Joi
+Proper centralized error handling
+Audit logging for suspicious attempts
+HTTPS-ready configuration
+Secure environment variable management
+📦 DATABASE DESIGN (MONGOOSE MODELS REQUIRED)
+Generate full schema definitions for:
+Student
+name
+email
+password
+role
+deviceFingerprint
+createdAt
+Teacher
+name
+email
+password
+role
+AttendanceSession
+sessionId
+teacherId
+subject
+startTime
+endTime
+isActive
+AttendanceRecord
+studentId
+sessionId
+timestamp
+ipAddress
+location (lat, lng)
+AuditLog
+studentId
+action
+reason
+ipAddress
+timestamp
+Add indexes and constraints properly.
+📁 PROJECT STRUCTURE (PRODUCTION READY)
+Generate complete folder structure for:
+Backend
+src/
+config/
+controllers/
+services/
+middlewares/
+models/
+routes/
+utils/
+validators/
+jobs/
+app.js
+server.js
+Frontend
+src/
+api/
+components/
+pages/
+hooks/
+context/
+routes/
+utils/
+App.jsx
+main.jsx
+⚙️ IMPLEMENTATION ORDER (STRICT)
+Generate in this sequence:
+Backend project initialization
+MongoDB connection setup
+Redis setup
+Mongoose models
+Authentication system
+Register
+Login
+Access token
+Refresh token
+Role middleware
+Teacher: Start attendance session
+QR generation service
+Generate nonce
+Sign token
+Store in Redis with 30s TTL
+Attendance validation service
+Verify JWT
+Verify Redis token exists
+Check token not used
+Validate campus IP
+Validate GPS (Haversine)
+Validate device fingerprint
+Save attendance
+Mark token as used
+Audit logging
+Frontend setup
+Login UI
+Teacher dashboard with live rotating QR
+Student dashboard with QR scanner
+Location permission handling
+Device fingerprint generation
+API integration
+Protected routes
+Testing guide
+Environment variables list
+Deployment guide (Render/AWS ready)
+Do NOT skip steps.
+🚨 IMPORTANT RULES
+• Use async/await
+• Write clean modular code
+• Follow REST standards
+• No pseudocode
+• No high-level theory
+• Write real working implementation
+• Include minimal necessary comments
+• Make it scalable
+🧪 AFTER BUILD
+Provide:
+How to run locally
+Required .env variables
+Redis setup instructions
+MongoDB Atlas setup steps
+Example test flow
+Only output implementation code and structured build steps.
