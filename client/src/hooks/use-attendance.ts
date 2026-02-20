@@ -1,43 +1,47 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@shared/routes";
+import { useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import { useToast } from "@/hooks/use-toast";
+import { useCallback } from "react";
+import { Id } from "../../../convex/_generated/dataModel";
 
 export function useMarkAttendance() {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const markMutation = useMutation(api.attendance.mark);
 
-  return useMutation({
-    mutationFn: async (data: {
-      sessionId: number;
+  return {
+    mutate: useCallback(async (data: {
+      sessionId: Id<"sessions">;
       qrToken: string;
       location: { lat: number; lng: number };
       deviceFingerprint: string;
     }) => {
-      const res = await fetch(api.attendance.mark.path, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to mark attendance");
+      try {
+        const studentId = localStorage.getItem("userId") as Id<"users">;
+        if (!studentId) throw new Error("Not logged in");
+
+        await markMutation({
+          sessionId: data.sessionId,
+          studentId: studentId,
+          qrToken: data.qrToken,
+          location: data.location,
+          deviceFingerprint: data.deviceFingerprint,
+          // Basic IP grab since Convex doesn't easily expose it safely without a custom function header
+          ipAddress: "127.0.0.1"
+        });
+
+        toast({
+          title: "Success!",
+          description: "Attendance marked successfully.",
+          className: "bg-green-500 text-white border-green-600"
+        });
+      } catch (error: any) {
+        toast({
+          title: "Attendance Failed",
+          description: error.message,
+          variant: "destructive"
+        });
       }
-      return await res.json();
-    },
-    onSuccess: () => {
-      toast({ 
-        title: "Success!", 
-        description: "Attendance marked successfully.",
-        className: "bg-green-500 text-white border-green-600"
-      });
-    },
-    onError: (error: Error) => {
-      toast({ 
-        title: "Attendance Failed", 
-        description: error.message, 
-        variant: "destructive" 
-      });
-    },
-  });
+    }, [markMutation, toast]),
+    isPending: false
+  };
 }

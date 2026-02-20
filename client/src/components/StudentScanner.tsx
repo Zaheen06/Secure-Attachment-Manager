@@ -7,7 +7,9 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 
 export function StudentScanner() {
-  const { mutate: markAttendance, isPending, isSuccess, error } = useMarkAttendance();
+  const { mutate: markAttendance, isPending } = useMarkAttendance();
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
   const [scanResult, setScanResult] = useState<string | null>(null);
   const [fingerprint, setFingerprint] = useState<string | null>(null);
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
@@ -30,14 +32,14 @@ export function StudentScanner() {
 
     const scanner = new Html5QrcodeScanner(
       "reader",
-      { 
-        fps: 10, 
+      {
+        fps: 10,
         qrbox: { width: 250, height: 250 },
         aspectRatio: 1.0,
       },
       false
     );
-    
+
     scannerRef.current = scanner;
 
     scanner.render(
@@ -73,16 +75,22 @@ export function StudentScanner() {
       if (!sessionId || !token) throw new Error("Invalid QR Code");
 
       navigator.geolocation.getCurrentPosition(
-        (position) => {
-          markAttendance({
-            sessionId,
-            qrToken: token,
-            location: {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude
-            },
-            deviceFingerprint: fingerprint
-          });
+        async (position) => {
+          try {
+            await markAttendance({
+              sessionId,
+              qrToken: token,
+              location: {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+              },
+              deviceFingerprint: fingerprint
+            });
+            setIsSuccess(true);
+          } catch (err: any) {
+            setError(err);
+            toast({ title: "Attendance Error", description: err.message, variant: "destructive" });
+          }
         },
         (err) => {
           toast({ title: "Location Error", description: "Location access is required.", variant: "destructive" });

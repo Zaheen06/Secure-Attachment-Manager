@@ -1,107 +1,72 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, type LoginRequest } from "@shared/routes";
-import { InsertUser } from "@shared/schema";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { useState, useCallback, useEffect } from "react";
+import { Id } from "../../../convex/_generated/dataModel";
 
 export function useAuth() {
-  const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
-  const { data: user, isLoading } = useQuery({
-    queryKey: [api.auth.me.path],
-    queryFn: async () => {
-      const res = await fetch(api.auth.me.path);
-      if (res.status === 401) return null;
-      if (!res.ok) throw new Error("Failed to fetch user");
-      return await res.json();
-    },
-    retry: false,
+  // Custom simple token auth implementation using localStorage
+  const [userId, setUserId] = useState<Id<"users"> | null>(() => {
+    return (localStorage.getItem("userId") as Id<"users">) || null;
   });
 
-  const loginMutation = useMutation({
-    mutationFn: async (credentials: LoginRequest) => {
-      const res = await fetch(api.auth.login.path, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(credentials),
-      });
-      
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Login failed");
-      }
-      return await res.json();
-    },
-    onSuccess: (data) => {
-      queryClient.setQueryData([api.auth.me.path], data.user);
+  const user = useQuery(api.auth.me, { userId: userId || undefined });
+  const isLoading = user === undefined;
+
+  const loginMutation = useMutation(api.auth.login);
+  const registerMutation = useMutation(api.auth.register);
+
+  const login = useCallback(async (credentials: any) => {
+    try {
+      const id = await loginMutation(credentials);
+      localStorage.setItem("userId", id);
+      setUserId(id);
       toast({ title: "Welcome back!", description: "Successfully logged in." });
-      
-      // Redirect based on role
-      if (data.user.role === "teacher" || data.user.role === "admin") {
-        setLocation("/dashboard");
-      } else {
-        setLocation("/student/scan");
-      }
-    },
-    onError: (error: Error) => {
-      toast({ 
-        title: "Login Failed", 
-        description: error.message, 
-        variant: "destructive" 
-      });
-    },
-  });
 
-  const registerMutation = useMutation({
-    mutationFn: async (data: InsertUser) => {
-      const res = await fetch(api.auth.register.path, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+      // We don't have user role immediately synchronously returned here, 
+      // but the route protector will handle redirect when user query resolves
+      setLocation("/dashboard");
+    } catch (error: any) {
+      toast({
+        title: "Login Failed",
+        description: error.message,
+        variant: "destructive"
       });
+    }
+  }, [loginMutation, toast, setLocation]);
 
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Registration failed");
-      }
-      return await res.json();
-    },
-    onSuccess: () => {
+  const register = useCallback(async (data: any) => {
+    try {
+      await registerMutation(data);
       toast({ title: "Account created", description: "Please log in with your new account." });
       setLocation("/login");
-    },
-    onError: (error: Error) => {
-      toast({ 
-        title: "Registration Failed", 
-        description: error.message, 
-        variant: "destructive" 
+    } catch (error: any) {
+      toast({
+        title: "Registration Failed",
+        description: error.message,
+        variant: "destructive"
       });
-    },
-  });
+    }
+  }, [registerMutation, toast, setLocation]);
 
-  const logoutMutation = useMutation({
-    mutationFn: async () => {
-      // In a real app with cookie auth, we'd hit a logout endpoint.
-      // For this implementation, we just clear client state since we might rely on token in response
-      // But typically we clear the cookie.
-      // Assuming stateless or cookie-based, we'll just reload or clear query cache.
-      queryClient.setQueryData([api.auth.me.path], null);
-    },
-    onSuccess: () => {
-      setLocation("/login");
-      toast({ title: "Logged out" });
-    },
-  });
+  const logout = useCallback(() => {
+    localStorage.removeItem("userId");
+    setUserId(null);
+    setLocation("/login");
+    toast({ title: "Logged out" });
+  }, [setLocation, toast]);
 
   return {
     user,
     isLoading,
-    login: loginMutation.mutate,
-    isLoggingIn: loginMutation.isPending,
-    register: registerMutation.mutate,
-    isRegistering: registerMutation.isPending,
-    logout: logoutMutation.mutate,
+    login,
+    isLoggingIn: false,
+    register,
+    isRegistering: false,
+    logout,
   };
 }

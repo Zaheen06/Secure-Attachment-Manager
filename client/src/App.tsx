@@ -12,12 +12,12 @@ import StudentScanPage from "@/pages/StudentScanPage";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 
-function PrivateRoute({ 
-  component: Component, 
-  allowedRoles 
-}: { 
-  component: React.ComponentType<any>, 
-  allowedRoles: string[] 
+function PrivateRoute({
+  component: Component,
+  allowedRoles
+}: {
+  component: React.ComponentType<any>,
+  allowedRoles: string[]
 }) {
   const { user, isLoading } = useAuth();
 
@@ -42,15 +42,15 @@ function Router() {
       <Route path="/" component={() => <Redirect to="/login" />} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
-      
+
       <Route path="/dashboard">
         <PrivateRoute component={TeacherDashboard} allowedRoles={['teacher', 'admin']} />
       </Route>
-      
+
       <Route path="/session/:id">
         <PrivateRoute component={SessionDetails} allowedRoles={['teacher', 'admin']} />
       </Route>
-      
+
       <Route path="/student/scan">
         <PrivateRoute component={StudentScanPage} allowedRoles={['student']} />
       </Route>
@@ -60,14 +60,20 @@ function Router() {
   );
 }
 
+import { ConvexProvider, ConvexReactClient } from "convex/react";
+
+const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
+
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ConvexProvider client={convex}>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ConvexProvider>
   );
 }
 

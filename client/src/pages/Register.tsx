@@ -24,7 +24,7 @@ export default function Register() {
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-slate-950 dark:to-slate-900 p-4">
       <div className="w-full max-w-md animate-in">
         <div className="mb-8 text-center space-y-2">
-           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 text-primary mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 text-primary mb-4">
             <CheckCircle2 className="w-8 h-8" />
           </div>
           <h1 className="text-3xl font-bold font-display tracking-tight">Create Account</h1>
@@ -39,8 +39,8 @@ export default function Register() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
-                <Input 
-                  id="name" 
+                <Input
+                  id="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="h-11 rounded-xl"
@@ -49,9 +49,9 @@ export default function Register() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input 
-                  id="email" 
-                  type="email" 
+                <Input
+                  id="email"
+                  type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="h-11 rounded-xl"
@@ -60,9 +60,9 @@ export default function Register() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input 
-                  id="password" 
-                  type="password" 
+                <Input
+                  id="password"
+                  type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="h-11 rounded-xl"
@@ -82,9 +82,9 @@ export default function Register() {
                 </Select>
               </div>
 
-              <Button 
-                type="submit" 
-                className="w-full h-11 rounded-xl text-md font-semibold mt-4" 
+              <Button
+                type="submit"
+                className="w-full h-11 rounded-xl text-md font-semibold mt-4"
                 disabled={isRegistering}
               >
                 {isRegistering ? "Creating account..." : "Create account"}

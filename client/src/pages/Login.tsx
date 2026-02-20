@@ -39,9 +39,9 @@ export default function Login() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input 
-                  id="email" 
-                  type="email" 
+                <Input
+                  id="email"
+                  type="email"
                   placeholder="you@school.edu"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -53,18 +53,18 @@ export default function Login() {
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Password</Label>
                 </div>
-                <Input 
-                  id="password" 
-                  type="password" 
+                <Input
+                  id="password"
+                  type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="h-11 rounded-xl"
                   required
                 />
               </div>
-              <Button 
-                type="submit" 
-                className="w-full h-11 rounded-xl text-md font-semibold mt-2" 
+              <Button
+                type="submit"
+                className="w-full h-11 rounded-xl text-md font-semibold mt-2"
                 disabled={isLoggingIn}
               >
                 {isLoggingIn ? "Signing in..." : "Sign in"}

@@ -55,13 +55,13 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  
+
   // === AUTH ===
-  
+
   app.post(api.auth.register.path, async (req, res) => {
     try {
       const input = api.auth.register.input.parse(req.body);
-      
+
       const existingUser = await storage.getUserByEmail(input.email);
       if (existingUser) {
         return res.status(400).json({ message: "Email already exists" });
@@ -69,7 +69,7 @@ export async function registerRoutes(
 
       const hashedPassword = await bcrypt.hash(input.password, SALT_ROUNDS);
       const user = await storage.createUser({ ...input, password: hashedPassword });
-      
+
       // Don't return password
       const { password, ...userWithoutPassword } = user;
       res.status(201).json(userWithoutPassword);
@@ -85,7 +85,7 @@ export async function registerRoutes(
     try {
       const { email, password } = req.body;
       const user = await storage.getUserByEmail(email);
-      
+
       if (!user || !(await bcrypt.compare(password, user.password))) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
@@ -118,8 +118,8 @@ export async function registerRoutes(
     }
     try {
       const input = api.sessions.create.input.parse(req.body);
-      const session = await storage.createSession({ 
-        ...input, 
+      const session = await storage.createSession({
+        ...input,
         teacherId: req.user.id,
         // Set default location if not provided (for MVP)
         locationLat: input.locationLat || CAMPUS_CENTER.lat,
@@ -128,10 +128,10 @@ export async function registerRoutes(
       });
       res.status(201).json(session);
     } catch (err) {
-        if (err instanceof z.ZodError) {
-            console.log("Validation error:", JSON.stringify(err.errors, null, 2));
-            return res.status(400).json({ message: err.errors[0].message, details: err.errors });
-        }
+      if (err instanceof z.ZodError) {
+        console.log("Validation error:", JSON.stringify(err.errors, null, 2));
+        return res.status(400).json({ message: err.errors[0].message, details: err.errors });
+      }
       console.error(err);
       res.status(500).json({ message: "Error creating session" });
     }
@@ -155,7 +155,7 @@ export async function registerRoutes(
 
     const sessionId = Number(req.params.id);
     const session = await storage.getSession(sessionId);
-    
+
     if (!session) return res.status(404).json({ message: "Session not found" });
     if (session.teacherId !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ message: "Not your session" });
@@ -163,17 +163,17 @@ export async function registerRoutes(
 
     // Check if current QR is still valid to avoid rapid regeneration
     if (session.currentQrCode && session.currentQrExpiresAt && new Date() < new Date(session.currentQrExpiresAt)) {
-        // Only regenerate if it's about to expire (e.g., within 5 seconds) or if forced
-        const timeToExpiry = (new Date(session.currentQrExpiresAt).getTime() - Date.now()) / 1000;
-        if (timeToExpiry > 5) {
-            return res.json({ token: session.currentQrCode, expiresAt: session.currentQrExpiresAt.toISOString() });
-        }
+      // Only regenerate if it's about to expire (e.g., within 5 seconds) or if forced
+      const timeToExpiry = (new Date(session.currentQrExpiresAt).getTime() - Date.now()) / 1000;
+      if (timeToExpiry > 5) {
+        return res.json({ token: session.currentQrCode, expiresAt: session.currentQrExpiresAt.toISOString() });
+      }
     }
 
     // Generate QR Token
     const nonce = randomUUID();
     const expiresAt = new Date(Date.now() + QR_TTL_SECONDS * 1000);
-    
+
     const qrToken = jwt.sign({ sessionId, nonce }, JWT_SECRET, { expiresIn: QR_TTL_SECONDS });
 
     await storage.updateSessionQr(sessionId, qrToken, expiresAt);
@@ -192,18 +192,18 @@ export async function registerRoutes(
       // 1. Validate Session & QR
       const session = await storage.getSession(sessionId);
       if (!session) {
-          await storage.createAuditLog({ userId: studentId, action: "ATTENDANCE_FAILED", reason: "Invalid session", ipAddress });
-          return res.status(400).json({ message: "Invalid session" });
+        await storage.createAuditLog({ userId: studentId, action: "ATTENDANCE_FAILED", reason: "Invalid session", ipAddress });
+        return res.status(400).json({ message: "Invalid session" });
       }
 
       if (session.currentQrCode !== qrToken) {
-          await storage.createAuditLog({ userId: studentId, action: "ATTENDANCE_FAILED", reason: "Invalid QR Token", ipAddress });
-          return res.status(400).json({ message: "Invalid or expired QR code" });
+        await storage.createAuditLog({ userId: studentId, action: "ATTENDANCE_FAILED", reason: "Invalid QR Token", ipAddress });
+        return res.status(400).json({ message: "Invalid or expired QR code" });
       }
 
       if (new Date() > new Date(session.currentQrExpiresAt!)) {
-          await storage.createAuditLog({ userId: studentId, action: "ATTENDANCE_FAILED", reason: "Expired QR Token", ipAddress });
-          return res.status(400).json({ message: "QR code expired" });
+        await storage.createAuditLog({ userId: studentId, action: "ATTENDANCE_FAILED", reason: "Expired QR Token", ipAddress });
+        return res.status(400).json({ message: "QR code expired" });
       }
 
       // 2. Validate Already Marked
@@ -218,7 +218,7 @@ export async function registerRoutes(
         await storage.createAuditLog({ userId: studentId, action: "ATTENDANCE_FAILED", reason: "Device Mismatch", ipAddress, details: { registered: user.deviceFingerprint, current: deviceFingerprint } });
         return res.status(403).json({ message: "Device mismatch. Please use your registered device." });
       }
-      
+
       // Bind device if first time
       if (!user?.deviceFingerprint) {
         await storage.updateUserFingerprint(studentId, deviceFingerprint);
@@ -230,10 +230,10 @@ export async function registerRoutes(
           location.lat, location.lng,
           session.locationLat, session.locationLng
         );
-        
+
         if (distance > (session.radius || CAMPUS_RADIUS_METERS)) {
-            await storage.createAuditLog({ userId: studentId, action: "ATTENDANCE_FAILED", reason: "Location mismatch", ipAddress, details: { distance, allowed: session.radius } });
-            return res.status(400).json({ message: `You are too far from the classroom (${Math.round(distance)}m).` });
+          await storage.createAuditLog({ userId: studentId, action: "ATTENDANCE_FAILED", reason: "Location mismatch", ipAddress, details: { distance, allowed: session.radius } });
+          return res.status(400).json({ message: `You are too far from the classroom (${Math.round(distance)}m).` });
         }
       }
 
@@ -274,7 +274,7 @@ export async function registerRoutes(
     if (!session) return res.status(404).json({ message: "Session not found" });
 
     if (session.teacherId !== req.user.id && req.user.role !== 'admin') {
-       return res.status(403).json({ message: "Unauthorized" });
+      return res.status(403).json({ message: "Unauthorized" });
     }
 
     const records = await storage.getSessionAttendance(sessionId);

@@ -32,7 +32,7 @@ export default function StudentScanPage() {
 
       <main className="max-w-md mx-auto space-y-6">
         <StudentScanner />
-        
+
         <div className="text-center text-sm text-muted-foreground px-8">
           <p>Please ensure you are inside the classroom and have granted camera/location permissions.</p>
         </div>

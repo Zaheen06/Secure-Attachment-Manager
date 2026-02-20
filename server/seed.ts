@@ -4,9 +4,8 @@ import bcrypt from "bcrypt";
 
 async function seed() {
   console.log("Seeding database...");
-  
-  // Create Admin
-  const adminEmail = "admin@campus.edu";
+
+  "admin@campus.edu";
   let admin = await storage.getUserByEmail(adminEmail);
   if (!admin) {
     const hashedPassword = await bcrypt.hash("admin123", 10);

@@ -49,9 +49,9 @@ export default function TeacherDashboard() {
 
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-             {[1,2,3].map(i => (
-               <div key={i} className="h-48 rounded-2xl bg-gray-100 dark:bg-slate-800 animate-pulse" />
-             ))}
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-48 rounded-2xl bg-gray-100 dark:bg-slate-800 animate-pulse" />
+            ))}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -64,7 +64,7 @@ export default function TeacherDashboard() {
               </div>
             ) : (
               sessions.map((session: any) => (
-                <Card key={session.id} className="group hover:shadow-lg transition-all duration-300 border-border/60 hover:border-primary/50 overflow-hidden">
+                <Card key={session._id} className="group hover:shadow-lg transition-all duration-300 border-border/60 hover:border-primary/50 overflow-hidden">
                   <CardHeader className="bg-gradient-to-br from-white to-gray-50 dark:from-slate-900 dark:to-slate-800 border-b">
                     <div className="flex justify-between items-start">
                       <div>
@@ -74,9 +74,8 @@ export default function TeacherDashboard() {
                           {format(new Date(session.startTime), "MMM d, yyyy • h:mm a")}
                         </CardDescription>
                       </div>
-                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                        session.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-                      }`}>
+                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${session.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                        }`}>
                         {session.isActive ? 'Active' : 'Ended'}
                       </span>
                     </div>
@@ -90,8 +89,8 @@ export default function TeacherDashboard() {
                       {/* Placeholder count, real app would join attendance count */}
                       <span className="text-2xl font-bold tracking-tight">--</span>
                     </div>
-                    
-                    <Link href={`/session/${session.id}`}>
+
+                    <Link href={`/session/${session._id}`}>
                       <Button className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors" variant="outline">
                         View Session
                         <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />

@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "wouter";
-import { useSession, useSessionQr, useSessionAttendance } from "@/hooks/use-sessions";
+import { useSession, useSessionAttendance } from "@/hooks/use-sessions";
 import { useAuth } from "@/hooks/use-auth";
 import { QRCodeSVG } from "qrcode.react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,24 +8,52 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ArrowLeft, RefreshCw, MapPin, Loader2, Users } from "lucide-react";
 import { format } from "date-fns";
+import { useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { Id } from "../../../convex/_generated/dataModel";
 
 export default function SessionDetails() {
   const { id } = useParams();
-  const sessionId = parseInt(id || "0");
+  const sessionId = id as string;
   const { data: session, isLoading: sessionLoading } = useSession(sessionId);
-  const { data: qrData, isLoading: qrLoading, refetch: refetchQr } = useSessionQr(sessionId);
   const { data: attendanceList, isLoading: attendanceLoading } = useSessionAttendance(sessionId);
-  const { user } = useAuth();
 
+  const generateQrMutation = useMutation(api.sessions.generateQr);
+
+  const [qrData, setQrData] = useState<{ token: string, expiresAt: number } | null>(null);
+  const [qrLoading, setQrLoading] = useState(true);
   const [timeLeft, setTimeLeft] = useState(30);
+
+  const teacherId = localStorage.getItem("userId") as Id<"users">;
+
+  const refetchQr = useCallback(async () => {
+    if (!sessionId || !teacherId) return;
+    try {
+      setQrLoading(true);
+      const data = await generateQrMutation({
+        sessionId: sessionId as Id<"sessions">,
+        teacherId
+      });
+      setQrData(data);
+    } catch (e) {
+      console.error("Failed to generate QR:", e);
+    } finally {
+      setQrLoading(false);
+    }
+  }, [sessionId, teacherId, generateQrMutation]);
+
+  // Initial QR load
+  useEffect(() => {
+    refetchQr();
+  }, [refetchQr]);
 
   // Timer for QR refresh logic
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
-            refetchQr();
-            return 30;
+          refetchQr();
+          return 30;
         }
         return prev - 1;
       });
@@ -36,17 +64,16 @@ export default function SessionDetails() {
   // Sync timeLeft with actual expiry if available
   useEffect(() => {
     if (qrData?.expiresAt) {
-      const expiry = new Date(qrData.expiresAt).getTime();
       const now = Date.now();
-      const diff = Math.max(0, Math.floor((expiry - now) / 1000));
+      const diff = Math.max(0, Math.floor((qrData.expiresAt - now) / 1000));
       setTimeLeft(diff);
     }
   }, [qrData]);
 
   if (sessionLoading) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin w-10 h-10 text-primary" /></div>;
-  if (!session) return <div>Session not found</div>;
+  if (!session) return <div className="p-8 text-center">Session not found</div>;
 
-  const qrValue = qrData ? JSON.stringify({ sessionId: session.id, token: qrData.token }) : "";
+  const qrValue = qrData ? JSON.stringify({ sessionId: session._id, token: qrData.token }) : "";
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
@@ -85,7 +112,7 @@ export default function SessionDetails() {
               </p>
             </CardHeader>
             <CardContent className="flex flex-col items-center justify-center py-10">
-              {qrLoading || !qrData ? (
+              {qrLoading && !qrData ? (
                 <div className="w-64 h-64 bg-gray-100 rounded-xl flex items-center justify-center">
                   <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
                 </div>
@@ -97,7 +124,7 @@ export default function SessionDetails() {
                   </div>
                 </div>
               )}
-              
+
               <div className="mt-8 flex items-center gap-2 text-sm font-medium text-muted-foreground bg-gray-100 px-4 py-2 rounded-full">
                 <RefreshCw className={`w-4 h-4 ${timeLeft < 5 ? 'animate-spin text-red-500' : ''}`} />
                 Refreshing in {timeLeft}s
@@ -121,16 +148,16 @@ export default function SessionDetails() {
               ) : attendanceList && attendanceList.length > 0 ? (
                 <div className="divide-y divide-border">
                   {attendanceList.map((record: any) => (
-                    <div key={record.id} className="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
+                    <div key={record._id} className="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-10 w-10 border-2 border-white shadow-sm bg-primary/10 text-primary">
                           <AvatarFallback className="font-bold">
-                            {record.student.name.charAt(0).toUpperCase()}
+                            {record.student?.name?.charAt(0).toUpperCase() || '?'}
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-semibold text-sm">{record.student.name}</p>
-                          <p className="text-xs text-muted-foreground">{record.student.email}</p>
+                          <p className="font-semibold text-sm">{record.student?.name || 'Unknown'}</p>
+                          <p className="text-xs text-muted-foreground">{record.student?.email || ''}</p>
                         </div>
                       </div>
                       <div className="text-right">

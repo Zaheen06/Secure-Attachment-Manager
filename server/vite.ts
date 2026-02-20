@@ -1,5 +1,5 @@
 import { type Express } from "express";
-import { createServer as createViteServer, createLogger } from "vite";
+import { createServer as createViteServer, createLogger } from "script";
 import { type Server } from "http";
 import viteConfig from "../vite.config";
 import fs from "fs";
@@ -11,7 +11,7 @@ const viteLogger = createLogger();
 export async function setupVite(server: Server, app: Express) {
   const serverOptions = {
     middlewareMode: true,
-    hmr: { server, path: "/vite-hmr" },
+    hmr: { server, path: "" },
     allowedHosts: true as const,
   };
 
