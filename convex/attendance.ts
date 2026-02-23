@@ -64,15 +64,36 @@ export const mark = mutation({
             throw new Error("Attendance already marked");
         }
 
-        // 4. Device check
+        // 3.5 Device Level Session check
+        const deviceUsedInSession = await ctx.db
+            .query("attendance")
+            .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+            .filter((q) => q.eq(q.field("deviceFingerprint"), args.deviceFingerprint))
+            .first();
+
+        if (deviceUsedInSession && deviceUsedInSession.studentId !== args.studentId) {
+            throw new Error("This physical device has already been used to mark another student's attendance for this session! No cheating! 😉");
+        }
+
+        // 4. Device Registration check
         const user = await ctx.db.get(args.studentId);
         if (!user) throw new Error("User not found");
 
         if (user.deviceFingerprint && user.deviceFingerprint !== args.deviceFingerprint) {
-            throw new Error("Device mismatch. Please use your registered device.");
+            throw new Error("Device mismatch. Please use your originally registered device.");
         }
 
         if (!user.deviceFingerprint) {
+            // Make sure this device isn't already assigned to another user globally
+            const existingDeviceUser = await ctx.db
+                .query("users")
+                .filter(q => q.eq(q.field("deviceFingerprint"), args.deviceFingerprint))
+                .first();
+
+            if (existingDeviceUser && existingDeviceUser._id !== args.studentId) {
+                throw new Error("This device is already permanently registered to another student account.");
+            }
+
             await ctx.db.patch(args.studentId, { deviceFingerprint: args.deviceFingerprint });
         }
 
