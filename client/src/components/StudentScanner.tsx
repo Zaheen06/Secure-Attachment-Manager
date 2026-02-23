@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Html5QrcodeScanner } from "html5-qrcode";
+import { Html5QrcodeScanner, Html5QrcodeScanType } from "html5-qrcode";
 import { useMarkAttendance } from "@/hooks/use-attendance";
 import FingerprintJS from "@fingerprintjs/fingerprintjs";
 import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
@@ -36,6 +36,7 @@ export function StudentScanner() {
         fps: 10,
         qrbox: { width: 250, height: 250 },
         aspectRatio: 1.0,
+        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
       },
       false
     );
@@ -43,11 +44,11 @@ export function StudentScanner() {
     scannerRef.current = scanner;
 
     scanner.render(
-      (decodedText) => {
+      (decodedText: string) => {
         handleScan(decodedText);
         scanner.clear();
       },
-      (errorMessage) => {
+      (errorMessage: string) => {
         // Ignored to prevent console spam
       }
     );
